@@ -1,3 +1,4 @@
+import sqlite3
 import json
 import enum
 
@@ -9,12 +10,10 @@ class BibtexEntryTypes(enum.Enum):
    InBook = "InBook"
    InCollection = "InCollection"
    InProceedings = "InProceedings"
-   Manual = "Manual"
    MastersThesis = "MastersThesis"
    Misc = "Misc"
    PhdThesis = "PhdThesis"
    Proceedings = "Proceedings"
-   TechReport = "TechReport"
    Unpublished = "Unpublished"
    URL = "URL"
 
@@ -28,7 +27,7 @@ BIBTEX_STR_EXEMPLAR = '''
     number  = "12",
     month   = "jan"
 }
-'''
+'''  # TODO clean afterwards
 
 BIBTEX_JSON_EXEMPLAR = '''
 { 
@@ -41,7 +40,7 @@ BIBTEX_JSON_EXEMPLAR = '''
 "number":"12",
 "month":"jan"
 }
-'''
+'''  # TODO clean afterwards
 
 
 def get_bibtex_dict(bibtex_str):  # TODO or not TODO?
@@ -70,6 +69,15 @@ def get_bibtex_str(bibtex_dict):  # TODO or not TODO?
 
 
 def get_citation(bibtex_dict):  # TODO
+    '''
+    :param bibtex_dict:  "entry_type": "Article",
+                         "key": "levin2020",
+                         "title": "bib_title",
+                         "author": "Levin",
+                         "year": "2020",
+                         ...
+    :return: Creates citation based on given bibtex dictionary
+    '''
     pass
 
 
@@ -80,16 +88,28 @@ def add_biblio_item(POST_data, conn, c):
                                                 added_by (INTEGER),
                                                 abbreviation (TEXT)
     '''
-    bibtex_dict = json.loads(POST_data['bibtex_json'])
-    c.execute(
-        """INSERT INTO bibliography (
-              abbreviation,
-              description,
-              added_by
-              )
-           VALUES (?,?,?)""", (POST_data['abbreviation'],
-                               POST_data['bibtex_json'],  # TODO what format of data expected - bibtex_str or json_str
-                               POST_data['added_by'])
-        )
-    conn.commit()
-    # extract_biblio_table(c) # TODO figure out what it does
+    try:
+        c.execute(
+            """INSERT INTO bibliography (
+                  abbreviation,
+                  description,
+                  added_by
+                  )
+               VALUES (?,?,?)""", (POST_data['abbreviation'],
+                                   POST_data['bibtex_json'],  # TODO what format of data expected - bibtex_str or json_str
+                                   POST_data['added_by'])
+            )
+        new_id = c.lastrowid
+        conn.commit()
+        return str(new_id)
+        # extract_biblio_table(c) # TODO figure out what it does
+    except sqlite3.Error as e:
+        conn.rollback()  # TODO ?
+        raise e
+
+def get_all_records(c):
+    c.execute('SELECT * FROM bibliography;')  # TODO syntax, functionality?
+    res = c.fetchall()
+    res_dic = {
+        
+    }
