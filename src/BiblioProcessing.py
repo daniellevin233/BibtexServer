@@ -1,6 +1,23 @@
 import sqlite3
 import json
+import app as app
 import enum
+
+
+""" # a code for fetching rows with sqlite3 as dictionaries rather than as tuples
+def dict_factory(cursor, row):
+    d = {}
+    for idx, col in enumerate(cursor.description):
+        d[col[0]] = row[idx]
+    return d
+
+con = sqlite3.connect(":memory:")
+con.row_factory = dict_factory
+cur = con.cursor()
+cur.execute("select 1 as a")
+print cur.fetchone()["a"]
+"""
+
 
 class BibtexEntryTypes(enum.Enum):
    Article = "Article"
@@ -78,7 +95,7 @@ def get_citation(bibtex_dict):  # TODO
                          ...
     :return: Creates citation based on given bibtex dictionary
     '''
-    pass
+    return bibtex_dict['title']
 
 
 def add_biblio_item(POST_data, conn, c):
@@ -107,9 +124,12 @@ def add_biblio_item(POST_data, conn, c):
         conn.rollback()  # TODO ?
         raise e
 
-def get_all_records(c):
-    c.execute('SELECT * FROM bibliography;')  # TODO syntax, functionality?
-    res = c.fetchall()
-    res_dic = {
-        
-    }
+def get_all_records_as_dict(c):
+    results = {}
+    row_items = c.execute(f'SELECT * FROM bibliography;')
+    for record in row_items:
+        results[record[0]] = {
+            "title": get_citation(json.loads(record[2])),
+            "abbreviation" : record[1]
+        }
+    return results
