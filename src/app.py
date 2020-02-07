@@ -1,18 +1,6 @@
-import sqlite3
-import json
-import enum
 from flask import Flask, request, make_response, jsonify
 from flask_restplus import Api, Resource, fields
 from BiblioProcessing import *
-
-# class GetActions(enum.Enum):
-#    All = 'all'
-#    AllBibtex = 'allbibtex'
-#    RecordById = 'recordbyid'
-#    BibtexdById = 'bibtexbyid'
-#
-# class PostActions(enum.Enum):
-#    Add = 'add'
 
 GET_ACTIONS = [
     'all',
@@ -48,34 +36,44 @@ model = api.model('Test Model',
 # AUTH_SERVER_URL = 'https://iclassifier.pw/api/authserver' #  TODO ?
 
 @name_space.route("/")
-class BibliographyAppClass(Resource):
-
-    def get(self):
-        return request_handler('all', request)
+class BibliographyPostClass(Resource):
 
     @api.expect(model, validate=True)
     def post(self):
         return request_handler('add', request)
 
-    def disconnect(self, conn):
-        if (conn):
-            conn.close()
+@name_space.route("/all")
+class BibliographyGetAllClass(Resource):
 
-    def connect(self):
-        conn = None
-        try:
-            conn = sqlite3.connect(f'../data/biblio.db')
-        except sqlite3.Error as e:
-            print(f'Exception occured when writing: {e}')
-        return conn
+    def get(self):
+        return request_handler('all', request)
+
+@name_space.route("/allbibtex")
+class BibliographyGetAllBibtexClass(Resource):
+
+    def get(self):
+        return request_handler('allbibtex', request)
+
+@name_space.route("/recordbyid/<int:id>")
+class BibliographyGetRecordByIdClass(Resource):
+
+    def get(self, id):
+        return request_handler('recordbyid', request, id)
+
+@name_space.route("/bibtexbyid/<int:id>")
+class BibliographyGetBibtexByIdClass(Resource):
+
+    def get(self, id):
+        return request_handler('bibtexbyid', request, id)
 
 # @app.route('/<action>', methods=['POST', 'GET'])
-def request_handler(action, request=None):
+def request_handler(action, request=None, id=None):
     '''
 
     :param action:
     :return:
     '''
+    resp, conn = None, None
     try:
         conn = sqlite3.connect(f'../data/biblio.db')
         c = conn.cursor()
@@ -91,6 +89,26 @@ def request_handler(action, request=None):
             POST_data = json.loads(request.data)
             new_id = add_biblio_item(POST_data, conn, c)
             resp = make_response(new_id, 200)
+        elif (action == 'allbibtex'):
+            resp = make_response(jsonify(get_all_bibtex_as_dict(c)), 200)
+        elif (action == 'recordbyid'):
+            if id is None:  # TODO what kind of invalid request can be passed from the frontend
+                resp = make_response('No id given', 400)
+            else:
+                bibtex_str = get_record_by_id(c, id)
+                if not bibtex_str:
+                    resp = make_response('Record with given id not found', 404)
+                else:
+                    resp = make_response(jsonify(bibtex_str), 200)
+        elif (action == 'bibtexbyid'):
+            if id is None:  # TODO what kind of invalid request can be passed from the frontend
+                resp = make_response('No id given', 400)
+            else:
+                bibtex_str = get_bibtex_by_id(c, id)
+                if not bibtex_str:
+                    resp = make_response('Bibtex with given id not found', 404)
+                else:
+                    resp = make_response(bibtex_str, 200)
         else:
             resp = None
         c.close()
@@ -102,5 +120,28 @@ def request_handler(action, request=None):
             conn.close()
 
 
-def my_p(data):
-    print('======\n', str(data), '\n======\n')
+# def my_p(data):
+#     print('======\n', str(data), '\n======\n')
+
+
+# from pybtex.database import BibliographyData, Entry
+# from pybtex.style.formatting import BaseStyle
+# from pybtex.richtext import Text, Tag
+
+# if __name__ == '__main__':
+#     bib_data = BibliographyData({
+#         'article-minimal': Entry('article', [
+#             ('author', 'L[eslie] B. Lamport'),
+#             ('title', 'The Gnats and Gnus Document Preparation System'),
+#             ('journal', "G-Animal's Journal"),
+#             ('year', '1986'),
+#             ]),
+#     })
+#     entry = Entry('article', [
+#             ('author', 'L[eslie] B. Lamport'),
+#             ('title', 'The Gnats and Gnus Document Preparation System'),
+#             ('journal', "G-Animal's Journal"),
+#             ('year', '1986'),
+#             ])
+#     print(Text('Article ', Tag('em', entry.fields['title'])))
+#     # print(bib_data.to_string('yaml'))

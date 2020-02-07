@@ -3,7 +3,6 @@ import json
 import app as app
 import enum
 
-
 """ # a code for fetching rows with sqlite3 as dictionaries rather than as tuples
 def dict_factory(cursor, row):
     d = {}
@@ -17,7 +16,6 @@ cur = con.cursor()
 cur.execute("select 1 as a")
 print cur.fetchone()["a"]
 """
-
 
 class BibtexEntryTypes(enum.Enum):
    Article = "Article"
@@ -59,23 +57,9 @@ BIBTEX_JSON_EXEMPLAR = '''
 }
 '''  # TODO clean afterwards
 
-
-def get_bibtex_dict(bibtex_str):  # TODO or not TODO?
-    '''
-    :param bibtex_str: String - record BIBTEX in bibtex format.
-    :return: A simple dict with BibTeX field-value pairs,
-             for example `'author': 'Bird, R.B. and Armstrong, R.C. and Hassager, O.'` Each
-             entry will always have the following dict keys (in addition to other BibTeX fields):
-                * `ID` (BibTeX key)
-                * `ENTRYTYPE` (entry type in lowercase, e.g. `book`, `article` etc.)
-    '''
-    res = dict()
-    return res
-
-
 def get_bibtex_str(bibtex_dict):  # TODO or not TODO?
     '''
-    :param: bibtex_dict: Dictionary - BIBTEX record.
+    :param: bibtex_dict: Dictionary - BIBTEX record, must contain 'key' and 'entry_type' keys.
     :return: A single bibtex record string
     '''
     bibtex_lines = ['@{0} {{{1}'.format(bibtex_dict['entry_type'].upper(), bibtex_dict['key'])]
@@ -95,7 +79,7 @@ def get_citation(bibtex_dict):  # TODO
                          ...
     :return: Creates citation based on given bibtex dictionary
     '''
-    return bibtex_dict['title']
+    return "... here goes a citation"
 
 
 def add_biblio_item(POST_data, conn, c):
@@ -106,6 +90,8 @@ def add_biblio_item(POST_data, conn, c):
                                                 abbreviation (TEXT)
     '''
     try:
+        if 'abbreviation' not in POST_data:
+            POST_data['abbreviation'] = 'NULL'
         c.execute(
             """INSERT INTO bibliography (
                   abbreviation,
@@ -113,7 +99,7 @@ def add_biblio_item(POST_data, conn, c):
                   added_by
                   )
                VALUES (?,?,?)""", (POST_data['abbreviation'],
-                                   POST_data['bibtex_json'],  # TODO what format of data expected - bibtex_str or json_str
+                                   POST_data['bibtex_json'],
                                    POST_data['added_by'])
             )
         new_id = c.lastrowid
@@ -129,7 +115,36 @@ def get_all_records_as_dict(c):
     row_items = c.execute(f'SELECT * FROM bibliography;')
     for record in row_items:
         results[record[0]] = {
-            "title": get_citation(json.loads(record[2])),
-            "abbreviation" : record[1]
+            "abbreviation": record[1],
+            "title": get_citation(json.loads(record[2]))
         }
     return results
+
+def get_all_bibtex_as_dict(c):
+    results = {}
+    row_items = c.execute(f'SELECT * FROM bibliography;')
+    for record in row_items:
+        results[record[0]] = {
+            "abbreviation" : record[1],
+            "bibtex": get_bibtex_str(json.loads(record[2]))
+        }
+    return results
+
+def get_record_by_id(c, id):
+    record_dic = None
+    c.execute('SELECT * FROM bibliography WHERE id = (?)', (id,))
+    record = c.fetchone()
+    if record:
+        record_dic = {
+            "bibtex": record[2],
+            "abbreviation": record[1]
+        }
+    return record_dic
+
+def get_bibtex_by_id(c, id):
+    bibtex_str = None
+    c.execute('SELECT * FROM bibliography WHERE id = (?)', (id,))
+    record = c.fetchone()
+    if record:
+        bibtex_str = record[2]
+    return bibtex_str
