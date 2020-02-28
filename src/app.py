@@ -33,8 +33,6 @@ model = api.model('Test Model',
                      'added_by': fields.Integer(required=True,
                                                     description="ID of the user")})
 
-# AUTH_SERVER_URL = 'https://iclassifier.pw/api/authserver' #  TODO ?
-
 @name_space.route("/")
 class BibliographyPostClass(Resource):
 
@@ -54,16 +52,18 @@ class BibliographyGetAllBibtexClass(Resource):
     def get(self):
         return request_handler('allbibtex', request)
 
-@name_space.route("/recordbyid/<int:id>")
+@name_space.route("/recordbyid/<int:id>")  # TODO clean /<int:id>, fetch id manually
 class BibliographyGetRecordByIdClass(Resource):
 
     def get(self, id):
+        # id = request.args.get('id', default = -1, type = int)
         return request_handler('recordbyid', request, id)
 
-@name_space.route("/bibtexbyid/<int:id>")
+@name_space.route("/bibtexbyid/<int:id>")  # TODO clean /<int:id>, fetch id manually
 class BibliographyGetBibtexByIdClass(Resource):
 
     def get(self, id):
+        #  id = request.args.get('id', default = -1, type = int)
         return request_handler('bibtexbyid', request, id)
 
 # @app.route('/<action>', methods=['POST', 'GET'])
@@ -78,10 +78,10 @@ def request_handler(action, request=None, id=None):
         conn = sqlite3.connect(f'../data/biblio.db')
         c = conn.cursor()
 
-        if action not in (GET_ACTIONS + POST_ACTIONS):  # TODO - necessary check?
-            resp = make_response('This action is not available', 400) # TODO any other steps to be done here?
+        if action not in (GET_ACTIONS + POST_ACTIONS):
+            resp = make_response('This action is not available', 400)
         elif (action in GET_ACTIONS and request.method == 'POST') or \
-                (action in POST_ACTIONS and request.method == 'GET'):  # TODO has to be checked?
+                (action in POST_ACTIONS and request.method == 'GET'):
             resp = make_response(f'Wrong request method "{request.method}" for action "{action}"', 400)
         elif (action == 'all'):
             resp = make_response(jsonify(get_all_records_as_dict(c)), 200)
@@ -92,8 +92,8 @@ def request_handler(action, request=None, id=None):
         elif (action == 'allbibtex'):
             resp = make_response(jsonify(get_all_bibtex_as_dict(c)), 200)
         elif (action == 'recordbyid'):
-            if id is None:  # TODO what kind of invalid request can be passed from the frontend
-                resp = make_response('No id given', 400)
+            if type(id) is not int:
+                resp = make_response('No id given or wrong format', 400)
             else:
                 bibtex_str = get_record_by_id(c, id)
                 if not bibtex_str:
@@ -101,8 +101,8 @@ def request_handler(action, request=None, id=None):
                 else:
                     resp = make_response(jsonify(bibtex_str), 200)
         elif (action == 'bibtexbyid'):
-            if id is None:  # TODO what kind of invalid request can be passed from the frontend
-                resp = make_response('No id given', 400)
+            if type(id) is not int:
+                resp = make_response('No id given or wrong format', 400)
             else:
                 bibtex_str = get_bibtex_by_id(c, id)
                 if not bibtex_str:
@@ -118,30 +118,3 @@ def request_handler(action, request=None, id=None):
     finally:
         if(conn):
             conn.close()
-
-
-# def my_p(data):
-#     print('======\n', str(data), '\n======\n')
-
-
-# from pybtex.database import BibliographyData, Entry
-# from pybtex.style.formatting import BaseStyle
-# from pybtex.richtext import Text, Tag
-
-# if __name__ == '__main__':
-#     bib_data = BibliographyData({
-#         'article-minimal': Entry('article', [
-#             ('author', 'L[eslie] B. Lamport'),
-#             ('title', 'The Gnats and Gnus Document Preparation System'),
-#             ('journal', "G-Animal's Journal"),
-#             ('year', '1986'),
-#             ]),
-#     })
-#     entry = Entry('article', [
-#             ('author', 'L[eslie] B. Lamport'),
-#             ('title', 'The Gnats and Gnus Document Preparation System'),
-#             ('journal', "G-Animal's Journal"),
-#             ('year', '1986'),
-#             ])
-#     print(Text('Article ', Tag('em', entry.fields['title'])))
-#     # print(bib_data.to_string('yaml'))

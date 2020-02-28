@@ -42,7 +42,7 @@ BIBTEX_STR_EXEMPLAR = '''
     number  = "12",
     month   = "jan"
 }
-'''  # TODO clean afterwards
+'''  # TODO clean before deployment
 
 BIBTEX_JSON_EXEMPLAR = '''
 { 
@@ -55,7 +55,7 @@ BIBTEX_JSON_EXEMPLAR = '''
 "number":"12",
 "month":"jan"
 }
-'''  # TODO clean afterwards
+'''  # TODO clean before deployment
 
 def get_bibtex_str(bibtex_dict):  # TODO or not TODO?
     '''
@@ -65,8 +65,8 @@ def get_bibtex_str(bibtex_dict):  # TODO or not TODO?
     bibtex_lines = ['@{0} {{{1}'.format(bibtex_dict['entry_type'].upper(), bibtex_dict['key'])]
     for key, value in bibtex_dict.items():
         if key != 'entry_type' and key != 'key':  # @article{Sh:155,
-            bibtex_lines.append('\t{0} = "{1}"'.format(key, value))
-    return ',\n'.join(bibtex_lines) + '\n}'  # TODO check produced month format
+            bibtex_lines.append('ICAgIA==' + '{0} = "{1}"'.format(key, value))  # TODO convert \t to base64 format
+    return (',' + 'DQo=').join(bibtex_lines) + 'DQo=' + '}'  # TODO convert \n to base64 format
 
 
 def get_citation(bibtex_dict):  # TODO
@@ -90,15 +90,16 @@ def add_biblio_item(POST_data, conn, c):
                                                 abbreviation (TEXT)
     '''
     try:
-        if 'abbreviation' not in POST_data:
-            POST_data['abbreviation'] = 'NULL'
+        abbr = None
+        if 'abbreviation' in POST_data:
+            abbr = POST_data['abbreviation']
         c.execute(
             """INSERT INTO bibliography (
                   abbreviation,
                   description,
                   added_by
                   )
-               VALUES (?,?,?)""", (POST_data['abbreviation'],
+               VALUES (?,?,?)""", (abbr,
                                    POST_data['bibtex_json'],
                                    POST_data['added_by'])
             )
@@ -133,7 +134,7 @@ def get_all_bibtex_as_dict(c):
 def get_record_by_id(c, id):
     record_dic = None
     c.execute('SELECT * FROM bibliography WHERE id = (?)', (id,))
-    record = c.fetchone()
+    record = c.fetchone() #  TODO check return in case of not existing id
     if record:
         record_dic = {
             "bibtex": record[2],
