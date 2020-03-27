@@ -52,18 +52,16 @@ class BibliographyGetAllBibtexClass(Resource):
     def get(self):
         return request_handler('allbibtex', request)
 
-@name_space.route("/recordbyid/<int:id>")  # TODO clean /<int:id>, fetch id manually
+@name_space.route("/recordbyid/<int:id>")
 class BibliographyGetRecordByIdClass(Resource):
 
     def get(self, id):
-        # id = request.args.get('id', default = -1, type = int)
         return request_handler('recordbyid', request, id)
 
-@name_space.route("/bibtexbyid/<int:id>")  # TODO clean /<int:id>, fetch id manually
+@name_space.route("/bibtexbyid/<int:id>")
 class BibliographyGetBibtexByIdClass(Resource):
 
     def get(self, id):
-        #  id = request.args.get('id', default = -1, type = int)
         return request_handler('bibtexbyid', request, id)
 
 # @app.route('/<action>', methods=['POST', 'GET'])
