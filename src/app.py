@@ -2,6 +2,8 @@ from flask import Flask, request, make_response, jsonify
 from flask_restplus import Api, Resource, fields
 from BiblioProcessing import *
 
+POST_ACTIONS = ['add']
+
 GET_ACTIONS = [
     'all',
     'allbibtex',
@@ -9,7 +11,9 @@ GET_ACTIONS = [
     'bibtexbyid'
 ]
 
-POST_ACTIONS = ['add']
+PUT_ACTIONS = ['update']
+
+DELETE_ACTIONS = ['delete']
 
 BIBTEX_JSON_DESCRIPTION = """{
 								"entry_type": "Article",
@@ -26,7 +30,7 @@ api = Api(app=app)
 name_space = api.namespace('bibliography', description='Bibliography API')
 
 model = api.model('Test Model',
-		            {'abbreviation': fields.String(required = False,
+		            {'abbreviation': fields.String(required=False,
                                                     description="Abbreviation of the record"),
                      'bibtex_json': fields.String(required=True,
                                                     description=BIBTEX_JSON_DESCRIPTION),
@@ -64,22 +68,38 @@ class BibliographyGetBibtexByIdClass(Resource):
     def get(self, id):
         return request_handler('bibtexbyid', request, id)
 
-# @app.route('/<action>', methods=['POST', 'GET'])
+@name_space.route("/updatebyid/<int:id>")
+class BibliographyGetBibtexByIdClass(Resource):
+
+    @api.expect(model, validate=True)
+    def put(self, id):
+        return request_handler('update', request, id)
+
+@name_space.route("/deletebyid/<int:id>")
+class BibliographyGetRecordByIdClass(Resource):
+
+    def delete(self, id):
+        return request_handler('delete', request, id)
+
+
 def request_handler(action, request=None, id=None):
     '''
 
     :param action:
     :return:
     '''
+    global c
     resp, conn = None, None
     try:
         conn = sqlite3.connect(f'../data/biblio.db')
         c = conn.cursor()
 
-        if action not in (GET_ACTIONS + POST_ACTIONS):
+        if action not in (GET_ACTIONS + POST_ACTIONS + PUT_ACTIONS + DELETE_ACTIONS):
             resp = make_response('This action is not available', 400)
-        elif (action in GET_ACTIONS and request.method == 'POST') or \
-                (action in POST_ACTIONS and request.method == 'GET'):
+        elif (action in GET_ACTIONS and request.method != 'GET') or \
+                (action in POST_ACTIONS and request.method != 'POST') or \
+                (action in PUT_ACTIONS and request.method != 'PUT') or \
+                (action in DELETE_ACTIONS and request.method != 'DELETE'):
             resp = make_response(f'Wrong request method "{request.method}" for action "{action}"', 400)
         elif (action == 'all'):
             resp = make_response(jsonify(get_all_records_as_dict(c)), 200)
@@ -107,12 +127,27 @@ def request_handler(action, request=None, id=None):
                     resp = make_response('Bibtex with given id not found', 404)
                 else:
                     resp = make_response(bibtex_str, 200)
+        elif (action == 'update'):
+            c.execute('SELECT * FROM bibliography WHERE id = (?)', (id,))
+            record = c.fetchone()
+            if record is None:
+                resp = make_response(f'Bibliography entry with id {id} not found to update', 404)
+            else:
+                PUT_DATA = json.loads(request.data)
+                update_biblio_item(id, PUT_DATA, conn, c)
+                resp = make_response(str(id), 200)
+        elif (action == 'delete'):
+            c.execute('SELECT * FROM bibliography WHERE id = (?)', (id, ))
+            record = c.fetchone()
+            if record is None:
+                resp = make_response(f'Bibliography entry with id {id} not found to delete', 404)
+            else:
+                delete_biblio_item(id, conn, c)
+                resp = make_response(str(id), 200)
         else:
             resp = None
-        c.close()
         return resp
     except sqlite3.Error as e:
         print(f'Exception occured when writing: {e}')
     finally:
-        if(conn):
-            conn.close()
+        c.close()
