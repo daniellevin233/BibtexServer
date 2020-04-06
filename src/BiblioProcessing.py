@@ -118,7 +118,12 @@ def add_biblio_item(POST_data, conn, c):
 def get_all_records_as_dict(c):
     results = {}
     row_items = c.execute('SELECT * FROM {0};'.format(TABLE_NAME))
+    it = iter(row_items) # TODO
+    # print("RECORD: ", next(it))
+    # print("RECORD: ", next(it)[1])
+    # print("RECORD: ", next(it)[1])
     for record in row_items:
+        print("REC: ", record[1])
         results[record[0]] = {
             "abbreviation": record[1],
             "title": get_citation(json.loads(record[2]))
@@ -187,3 +192,24 @@ def delete_biblio_item(id, conn, c):
     except sqlite3.Error as e:
         conn.rollback()
         raise e
+
+def get_biggest_id():
+    """
+    :return: the biggest ID in the database so far
+    """
+    global c
+    try:
+        conn = sqlite3.connect(f'../data/biblio.db')
+        c = conn.cursor()
+        c.execute(
+            """SELECT seq FROM sqlite_sequence
+               WHERE name = '{0}';""".format(TABLE_NAME)
+        )
+        res = c.fetchone()
+        if not res:
+            raise Exception("The table sqlite_sequence doesn't contain tuple for '{0}' table".format(TABLE_NAME))
+        return res[0]
+    except sqlite3.Error as e:
+        print(f'Exception occured when accessing the database: {e}')
+    finally:
+        c.close()

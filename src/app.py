@@ -29,15 +29,19 @@ app = Flask(__name__)
 api = Api(app=app)
 name_space = api.namespace('bibliography', description='Bibliography API')
 
+class NullableString(fields.String):
+    __schema_type__ = ['string', 'null']
+    __schema_example__ = 'nullable string'
+
 model = api.model('Test Model',
-		            {'abbreviation': fields.String(required=False,
+		            {'abbreviation': NullableString(required=False,
                                                     description="Abbreviation of the record"),
                      'bibtex_json': fields.String(required=True,
                                                     description=BIBTEX_JSON_DESCRIPTION),
                      'added_by': fields.Integer(required=True,
                                                     description="ID of the user")})
 
-@name_space.route("/")
+@name_space.route("/add")
 class BibliographyPostClass(Resource):
 
     @api.expect(model, validate=True)
