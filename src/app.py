@@ -85,6 +85,14 @@ class BibliographyGetRecordByIdClass(Resource):
     def delete(self, id):
         return request_handler('delete', request, id)
 
+def validate_bibtex_json(bibtex_dict):
+    if not 'entry_type' in bibtex_dict or not 'author' in bibtex_dict or not 'key' in bibtex_dict:
+        return False
+    else:
+        return True
+        # if 'key' not in bibtex_dict: #  TODO
+        #     bibtex_dict['key'] = ''.join(c for c in bibtex_dict['author'] if c.isalnum()) + bibtex_dict['year']
+        # return bibtex_dict
 
 def request_handler(action, request=None, id=None):
     '''
@@ -108,14 +116,17 @@ def request_handler(action, request=None, id=None):
         elif (action == 'all'):
             resp = make_response(jsonify(get_all_records_as_dict(c)), 200)
         elif (action == 'add'):
-            POST_data = json.loads(request.data)
-            new_id = add_biblio_item(POST_data, conn, c)
-            resp = make_response(new_id, 200)
+            POST_data = json.loads(request.data) #  TODO
+            if not validate_bibtex_json(json.loads(POST_data['bibtex_json'])):
+                resp = make_response('Bad request: bibtex_json must contain fields entry_type, key and author', 400)
+            else:
+                new_id = add_biblio_item(POST_data, conn, c)
+                resp = make_response(new_id, 200)
         elif (action == 'allbibtex'):
             resp = make_response(jsonify(get_all_bibtex_as_dict(c)), 200)
         elif (action == 'recordbyid'):
             if type(id) is not int:
-                resp = make_response('No id given or wrong format', 400)
+                resp = make_response('Bad request: no id given or wrong format', 400)
             else:
                 bibtex_str = get_record_by_id(c, id)
                 if not bibtex_str:
@@ -137,9 +148,12 @@ def request_handler(action, request=None, id=None):
             if record is None:
                 resp = make_response(f'Bibliography entry with id {id} not found to update', 404)
             else:
-                PUT_DATA = json.loads(request.data)
-                update_biblio_item(id, PUT_DATA, conn, c)
-                resp = make_response(str(id), 200)
+                PUT_data = json.loads(request.data) #  TODO
+                if not validate_bibtex_json(json.loads(PUT_data['bibtex_json'])):
+                    resp = make_response('Bad request: bibtex_json must contain fields entry_type, key and author', 400)
+                else:
+                    update_biblio_item(id, PUT_data, conn, c)
+                    resp = make_response(str(id), 200)
         elif (action == 'delete'):
             c.execute('SELECT * FROM bibliography WHERE id = (?)', (id, ))
             record = c.fetchone()
