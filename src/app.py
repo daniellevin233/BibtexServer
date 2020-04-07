@@ -29,13 +29,13 @@ app = Flask(__name__)
 api = Api(app=app)
 name_space = api.namespace('bibliography', description='Bibliography API')
 
-class NullableString(fields.String):
+class NullableString(fields.String): # TODO
     __schema_type__ = ['string', 'null']
     __schema_example__ = 'nullable string'
 
 model = api.model('Test Model',
 		            {'abbreviation': NullableString(required=False,
-                                                    description="Abbreviation of the record"),
+                                                    description="Abbreviation of the record"), #  TODO
                      'bibtex_json': fields.String(required=True,
                                                     description=BIBTEX_JSON_DESCRIPTION),
                      'added_by': fields.Integer(required=True,
