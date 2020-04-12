@@ -26,7 +26,7 @@ BIBTEX_JSON_DESCRIPTION = """{
 							}"""
 
 app = Flask(__name__)
-api = Api(app=app)
+api = Api(app=app) # TODO: validate=False,
 name_space = api.namespace('bibliography', description='Bibliography API')
 
 class NullableString(fields.String): # TODO
@@ -86,13 +86,10 @@ class BibliographyGetRecordByIdClass(Resource):
         return request_handler('delete', request, id)
 
 def validate_bibtex_json(bibtex_dict):
-    if not 'entry_type' in bibtex_dict or not 'author' in bibtex_dict or not 'key' in bibtex_dict:
+    if not 'entry_type' in bibtex_dict:
         return False
     else:
         return True
-        # if 'key' not in bibtex_dict: #  TODO
-        #     bibtex_dict['key'] = ''.join(c for c in bibtex_dict['author'] if c.isalnum()) + bibtex_dict['year']
-        # return bibtex_dict
 
 def request_handler(action, request=None, id=None):
     '''
@@ -116,10 +113,13 @@ def request_handler(action, request=None, id=None):
         elif (action == 'all'):
             resp = make_response(jsonify(get_all_records_as_dict(c)), 200)
         elif (action == 'add'):
-            POST_data = json.loads(request.data) #  TODO
+            POST_data = json.loads(request.data)
             if not validate_bibtex_json(json.loads(POST_data['bibtex_json'])):
-                resp = make_response('Bad request: bibtex_json must contain fields entry_type, key and author', 400)
+                resp = make_response('Bad request: bibtex_json must contain the field entry_type', 400)
             else:
+                bibtex_dict = json.loads(POST_data['bibtex_json'])
+                bibtex_dict['key'] = str(get_biggest_id_internal_use(conn, c) + 1)
+                POST_data['bibtex_json'] = json.dumps(bibtex_dict)
                 new_id = add_biblio_item(POST_data, conn, c)
                 resp = make_response(new_id, 200)
         elif (action == 'allbibtex'):
@@ -167,5 +167,6 @@ def request_handler(action, request=None, id=None):
         return resp
     except sqlite3.Error as e:
         print(f'Exception occured when writing: {e}')
+        return make_response(f'Internal server error: {e}', 500)
     finally:
         c.close()

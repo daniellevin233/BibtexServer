@@ -72,7 +72,7 @@ def get_citation(bibtex_dict):
     #  generating a .md file (CITATION_FILE) with citations for every entry of the .bib database mentioned in
     #  CONFIGURATIONS file
     subprocess.run('pandoc -t markdown_strict --csl={0} --filter=pandoc-citeproc --standalone {1} -o {2}'.
-                   format(CITATION_STYLE_FILE, CONFIGURATIONS, TMP_CITATION_FILE), capture_output=True)
+                   format(CITATION_STYLE_FILE, CONFIGURATIONS, TMP_CITATION_FILE), shell=True, capture_output=True)
 
     #  extracting the citation from the generated .md file
     read_file_command = 'cat'
@@ -188,6 +188,20 @@ def delete_biblio_item(id, conn, c):
         conn.rollback()
         raise e
 
+def get_biggest_id_internal_use(conn, c):
+    try:
+        c.execute(
+            """SELECT seq FROM sqlite_sequence 
+               WHERE name = '{0}';""".format(TABLE_NAME)
+        )
+        res = c.fetchone()
+        if not res:
+            raise Exception("The table sqlite_sequence doesn't contain tuple for '{0}' table".format(TABLE_NAME))
+        return res[0]
+    except sqlite3.Error as e:
+        conn.rollback()
+        raise e
+
 def get_biggest_id():
     """
     :return: the biggest ID in the database so far
@@ -201,7 +215,7 @@ def get_biggest_id():
         )
         res = c.fetchone()
         if not res:
-            raise Exception("The table sqlite_sequence doesn't contain tuple for '{0}' table".format(TABLE_NAME))
+            raise Exception("The table '{0}' doesn't contain any entry".format(TABLE_NAME))
         return res[0]
     except sqlite3.Error as e:
         print(f'Exception occured when accessing the database: {e}')
