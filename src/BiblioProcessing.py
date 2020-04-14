@@ -85,7 +85,7 @@ def get_citation(bibtex_dict):
     os.remove(tmp_bib_database_file)
     os.remove(TMP_CITATION_FILE)
 
-    return citation.stdout.decode('utf-8').splitlines()[0]
+    return ' '.join(citation.stdout.decode('utf-8').splitlines())
 
 def add_biblio_item(POST_data, conn, c):
     '''

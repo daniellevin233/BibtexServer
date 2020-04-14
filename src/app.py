@@ -148,7 +148,7 @@ def request_handler(action, request=None, id=None):
             if record is None:
                 resp = make_response(f'Bibliography entry with id {id} not found to update', 404)
             else:
-                PUT_data = json.loads(request.data) #  TODO
+                PUT_data = json.loads(request.data)
                 if not validate_bibtex_json(json.loads(PUT_data['bibtex_json'])):
                     resp = make_response('Bad request: bibtex_json must contain fields entry_type, key and author', 400)
                 else:
