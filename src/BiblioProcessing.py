@@ -18,7 +18,7 @@ CONFIGURATIONS = 'bib_config.md'
 
 TABLE_NAME = 'bibliography'
 
-class BibtexEntryTypes(enum.Enum):
+class BibtexEntryTypes(enum.Enum): # TODO unnecessary?
    Article = "Article"
    Book = "Book"
    Booklet = "Booklet"
@@ -110,7 +110,7 @@ def add_biblio_item(POST_data, conn, c):
             )
         new_id = c.lastrowid
         conn.commit()
-        return str(new_id)
+        return new_id
     except sqlite3.Error as e:
         conn.rollback()
         raise e
@@ -154,6 +154,14 @@ def get_bibtex_by_id(c, id):
         bibtex_str = record[2]
     return bibtex_str
 
+def get_bibtex_json_by_id(c, id):
+    bibtex_json = None
+    c.execute('SELECT * FROM {0} WHERE id = (?)'.format(TABLE_NAME), (id,))
+    record = c.fetchone()
+    if record:
+        bibtex_json = json.loads(record[2])
+    return bibtex_json
+
 def update_biblio_item(id, PUT_data, conn, c):
     """
     Updates (PUT) single biblio record in the table bibliography
@@ -188,7 +196,7 @@ def delete_biblio_item(id, conn, c):
         conn.rollback()
         raise e
 
-def get_biggest_id_internal_use(conn, c):
+def get_next_id(conn, c):
     try:
         c.execute(
             """SELECT seq FROM sqlite_sequence 
@@ -202,22 +210,22 @@ def get_biggest_id_internal_use(conn, c):
         conn.rollback()
         raise e
 
-def get_biggest_id():
-    """
-    :return: the biggest ID in the database so far
-    """
-    global c
-    try:
-        conn = sqlite3.connect(f'../data/biblio.db')
-        c = conn.cursor()
-        c.execute(
-            """SELECT max(id) FROM {0};""".format(TABLE_NAME)
-        )
-        res = c.fetchone()
-        if not res:
-            raise Exception("The table '{0}' doesn't contain any entry".format(TABLE_NAME))
-        return res[0]
-    except sqlite3.Error as e:
-        print(f'Exception occured when accessing the database: {e}')
-    finally:
-        c.close()
+# def get_biggest_id(): # TODO clean
+#     """
+#     :return: the biggest ID in the database so far
+#     """
+#     global c
+#     try:
+#         conn = sqlite3.connect(f'../data/biblio.db')
+#         c = conn.cursor()
+#         c.execute(
+#             """SELECT max(id) FROM {0};""".format(TABLE_NAME)
+#         )
+#         res = c.fetchone()
+#         if not res:
+#             raise Exception("The table '{0}' doesn't contain any entry".format(TABLE_NAME))
+#         return res[0]
+#     except sqlite3.Error as e:
+#         print(f'Exception occured when accessing the database: {e}')
+#     finally:
+#         c.close()
