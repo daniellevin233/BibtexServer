@@ -1,6 +1,6 @@
 from flask import Flask, request, make_response, jsonify
 from flask_restplus import Api, Resource, fields
-from flask_cors import CORS, cross_origin  # TODO
+from flask_cors import CORS
 from BiblioProcessing import *
 
 POST_ACTIONS = ['add']
@@ -34,18 +34,16 @@ name_space = api.namespace('bibliography', description='Bibliography API')
 
 model = api.model('Test Model',
                   {'abbreviation': fields.String(required=False,
-                                                  description="Abbreviation of the record"),  # TODO
+                                                  description="Abbreviation of the record"),
                    'bibtex_json': fields.String(required=True,
                                                 description=BIBTEX_JSON_DESCRIPTION),
                    'added_by': fields.Integer(required=True,
                                               description="ID of the user")})
 
-
 @name_space.route("/add")
 class BibliographyPostClass(Resource):
 
-    @api.expect(model, validate=True)
-    @cross_origin()
+    @api.expect(model, validate=False)
     def post(self):
         return request_handler('add', request)
 
@@ -53,7 +51,6 @@ class BibliographyPostClass(Resource):
 @name_space.route("/all")
 class BibliographyGetAllClass(Resource):
 
-    @cross_origin()
     def get(self):
         return request_handler('all', request)
 
@@ -61,7 +58,6 @@ class BibliographyGetAllClass(Resource):
 @name_space.route("/allbibtex")
 class BibliographyGetAllBibtexClass(Resource):
 
-    @cross_origin()
     def get(self):
         return request_handler('allbibtex', request)
 
@@ -69,7 +65,6 @@ class BibliographyGetAllBibtexClass(Resource):
 @name_space.route("/recordbyid/<int:id>")
 class BibliographyGetRecordByIdClass(Resource):
 
-    @cross_origin()
     def get(self, id):
         return request_handler('recordbyid', request, id)
 
@@ -77,7 +72,6 @@ class BibliographyGetRecordByIdClass(Resource):
 @name_space.route("/bibtexbyid/<int:id>")
 class BibliographyGetBibtexByIdClass(Resource):
 
-    @cross_origin()
     def get(self, id):
         return request_handler('bibtexbyid', request, id)
 
@@ -85,7 +79,6 @@ class BibliographyGetBibtexByIdClass(Resource):
 @name_space.route("/bibtexjsonbyid/<int:id>")
 class BibliographyGetBibtexByIdClass(Resource):
 
-    @cross_origin()
     def get(self, id):
         return request_handler('bibtexjsonbyid', request, id)
 
@@ -93,8 +86,7 @@ class BibliographyGetBibtexByIdClass(Resource):
 @name_space.route("/updatebyid/<int:id>")
 class BibliographyGetBibtexByIdClass(Resource):
 
-    @api.expect(model, validate=True)
-    @cross_origin()
+    @api.expect(model, validate=False)
     def put(self, id):
         return request_handler('update', request, id)
 
@@ -102,45 +94,8 @@ class BibliographyGetBibtexByIdClass(Resource):
 @name_space.route("/deletebyid/<int:id>")
 class BibliographyGetRecordByIdClass(Resource):
 
-    @cross_origin()
     def delete(self, id):
         return request_handler('delete', request, id)
-
-requested_headers = ['X-PINGOTHER',
-                     'Accept',
-                     'Accept-Encoding',
-                     'Accept-Language',
-                     'Cache-Control',
-                     'Connection',
-                     'Content-Length',
-                     'Content-Type',
-                     'Host',
-                     'Origin',
-                     'Pragma',
-                     'Referer',
-                     'Sec-Fetch-Dest',
-                     'Sec-Fetch-Mode',
-                     'Sec-Fetch-Site',
-                     'User-Agent']
-
-@name_space.route("/")
-class BibliographyOptions(Resource):
-
-    def options(self):
-        resp = make_response('OK', 200)
-        # resp.headers['Access-Control-Request-Method'] = 'POST' #, GET, PUT, DELETE, OPTIONS'
-        # resp.headers['Access-Control-Allow-Origin'] = '*'
-        # resp.headers['Access-Control-Allow-Headers'] = ', '.join(requested_headers)
-        # resp.headers['Access-Control-Max-Age'] = 10
-        resp.headers["Access-Control-Allow-Origin"] = "*"
-        resp.headers["Access-Control-Allow-Credentials"] = "true"
-        resp.headers["Access-Control-Allow-Methods"] = "GET,DELETE,OPTIONS,POST,PUT"
-        resp.headers["Access-Control-Allow-Headers"] = "Access-Control-Allow-Headers, Access-Control-Allow-Methods, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers"
-        print(resp.headers)
-        return resp
-
-
-api.add_resource(BibliographyOptions, '/')
 
 
 def request_handler(action, request=None, id=None):
@@ -173,7 +128,6 @@ def request_handler(action, request=None, id=None):
                 post_data['bibtex_json'] = json.dumps(bibtex_dict)
                 new_id = add_biblio_item(post_data, conn, c)
                 resp = make_response(str(new_id), 200)
-                # resp.headers.add("Access-Control-Allow-Origin", "*") todo
         elif action == 'allbibtex':
             resp = make_response(jsonify(get_all_bibtex_as_dict(c)), 200)
         elif action == 'recordbyid':
@@ -225,7 +179,6 @@ def request_handler(action, request=None, id=None):
                 resp = make_response(str(id), 200)
         else:
             resp = None
-        resp.headers['Access-Control-Allow-Origin'] = '*' # TODO
         return resp
     except sqlite3.Error as e:
         print(f'Exception occured when writing: {e}')
