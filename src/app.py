@@ -2,6 +2,7 @@ from flask import Flask, request, make_response, jsonify
 from flask_restplus import Api, Resource, fields
 from flask_cors import CORS
 from BiblioProcessing import *
+import ast
 
 POST_ACTIONS = ['add']
 
@@ -38,7 +39,9 @@ model = api.model('Test Model',
                    'bibtex_json': fields.String(required=True,
                                                 description=BIBTEX_JSON_DESCRIPTION),
                    'added_by': fields.Integer(required=True,
-                                              description="ID of the user")})
+                                              description="ID of the user"),
+                   'project_type': fields.String(required=True,
+                                                description="Type of the project this record is associated with")})
 
 @name_space.route("/add")
 class BibliographyPostClass(Resource):
@@ -165,8 +168,13 @@ def request_handler(action, request=None, id=None):
             else:
                 put_data = json.loads(request.data)
                 if 'entry_type' not in json.loads(put_data['bibtex_json']):
-                    resp = make_response('Bad request: bibtex_json must contain fields entry_type, key and author', 400)
+                    resp = make_response('Bad request: bibtex_json must contain the field entry_type', 400)
                 else:
+                    # add key field to avoid requiring it from the user
+                    # key field is important for generating bibtex record (e.g. to generate citations)
+                    add_key_dict = ast.literal_eval(put_data['bibtex_json']) # convert string to dict
+                    add_key_dict['key'] = f'{id}' # add the 'key' field
+                    put_data['bibtex_json'] = json.dumps(add_key_dict) # update the payload
                     update_biblio_item(id, put_data, conn, c)
                     resp = make_response(str(id), 200)
         elif action == 'delete':
