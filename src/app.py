@@ -193,3 +193,4 @@ def request_handler(action, request=None, id=None):
         return make_response(f'Internal server error: {e}', 500)
     finally:
         c.close()
+

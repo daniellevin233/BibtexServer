@@ -4,7 +4,7 @@ CREATE TABLE 'bibliography' (
 		'abbreviation'	TEXT,
 		'description' 	TEXT NOT NULL, -- json or bibtex entry
 		'added_by'	    INTEGER NOT NULL,
-		'project_type'  TEXT NOT NULL
+		'project_type'  TEXT DEFAULT 'default'
 );
-UPDATE sqlite_sequence SET seq = 500 WHERE name = 'bibliography'; -- set start value for autoincrement to 501
+INSERT INTO sqlite_sequence (name, seq) VALUES ('bibliography', 500); -- set start value for autoincrement to 501
 		
