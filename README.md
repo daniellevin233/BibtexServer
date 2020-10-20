@@ -1,2 +1,2 @@
-# Backend code for bibliography management with bibtex
+Backend code for bibliography management with bibtex
 
