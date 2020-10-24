@@ -144,7 +144,7 @@ def request_handler(action, request=None, id=None):
                     resp = make_response(jsonify(record_dict), 200)
         elif action == 'bibtexbyid':
             if type(id) is not int:
-                resp = make_response('No id given or wrong format', 400)
+                resp = make_response('Bad request: no id given or wrong format', 400)
             else:
                 bibtex_str = get_bibtex_by_id(c, id)
                 if not bibtex_str:
@@ -153,7 +153,7 @@ def request_handler(action, request=None, id=None):
                     resp = make_response(bibtex_str, 200)
         elif action == 'bibtexjsonbyid':
             if type(id) is not int:
-                resp = make_response('No id given or wrong format', 400)
+                resp = make_response('Bad request: no id given or wrong format', 400)
             else:
                 bibtex_json = get_bibtex_json_by_id(c, id)
                 if not bibtex_json:
@@ -170,7 +170,7 @@ def request_handler(action, request=None, id=None):
                 if 'entry_type' not in json.loads(put_data['bibtex_json']):
                     resp = make_response('Bad request: bibtex_json must contain the field entry_type', 400)
                 else:
-                    # add key field to avoid requiring it from the user
+                    # adding key field to avoid requiring it from the user
                     # key field is important for generating bibtex record (e.g. to generate citations)
                     add_key_dict = ast.literal_eval(put_data['bibtex_json']) # convert string to dict
                     add_key_dict['key'] = f'{id}' # add the 'key' field
@@ -193,4 +193,3 @@ def request_handler(action, request=None, id=None):
         return make_response(f'Internal server error: {e}', 500)
     finally:
         c.close()
-
